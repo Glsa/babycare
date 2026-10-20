@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- API 26~30 widget 选择列表的简易预览图（暖米底 + 主色圆点；31+ 无 previewLayout 时也走这里） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path
+        android:pathData="M8,4 L40,4 A6,6 0 0 1 46,10 L46,38 A6,6 0 0 1 40,44 L8,44 A6,6 0 0 1 2,38 L2,10 A6,6 0 0 1 8,4 Z"
+        android:fillColor="#FAF6F3" />
+    <path
+        android:pathData="M24,12 m-6,0 a6,6 0 1 0 12,0 a6,6 0 1 0 -12,0"
+        android:fillColor="#E8697A" />
+    <path
+        android:pathData="M14,30 m-4,0 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0"
+        android:fillColor="#E3A246" />
+    <path
+        android:pathData="M34,30 m-4,0 a4,4 0 1 0 8,0 a4,4 0 1 0 -8,0"
+        android:fillColor="#7D9BE8" />
+</vector>

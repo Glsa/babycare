@@ -1,0 +1,20 @@
+# Android 工程
+.gradle/
+build/
+app/build/
+local.properties
+*.apk
+*.aab
+.cxx/
+
+# Go 后端
+backend/babycare.db
+backend/babycare.db-wal
+backend/babycare.db-shm
+backend/babycare-sync
+backend/babycare-sync.exe
+
+# IDE
+.idea/
+*.iml
+.vscode/

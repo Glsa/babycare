@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 计时前台服务 + 常驻通知（API 33+ 通知需运行时请求，见 TodayPage） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 提醒（0014）：闹钟不随重启存活，开机重排 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 云同步（0016）：自建后端；内网 http 调试需放行明文，公网部署应走 https -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:name=".BabycareApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:usesCleartextTraffic="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Babycare">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.Babycare"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 桌面 Widget 三款（FR-14）：系统以显式广播送 APPWIDGET_UPDATE，exported=false 可收 -->
+        <receiver
+            android:name=".widget.QuickReceiver"
+            android:exported="false"
+            android:label="快捷记录">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_quick_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.OverviewReceiver"
+            android:exported="false"
+            android:label="今日概览">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_overview_info" />
+        </receiver>
+        <receiver
+            android:name=".widget.SleepReceiver"
+            android:exported="false"
+            android:label="睡眠计时">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_sleep_info" />
+        </receiver>
+        <!-- Widget 兜底刷新 tick（WidgetRefresher 的 AlarmManager 自有闹钟，仅显式 Intent） -->
+        <receiver
+            android:name=".widget.WidgetAlarmReceiver"
+            android:exported="false" />
+
+        <!-- 提醒（0014 · FR-13）：单闹钟链触发 + 开机重排 -->
+        <receiver
+            android:name=".remind.ReminderReceiver"
+            android:exported="false" />
+        <receiver
+            android:name=".remind.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- 亲喂/睡眠计时：跨进程存活（specialUse = 计时器场景标准类型） -->
+        <service
+            android:name=".timer.TimerService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="婴儿喂养与睡眠计时" />
+        </service>
+    </application>
+
+</manifest>

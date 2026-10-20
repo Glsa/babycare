@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  启动图标前景（0015）：白色宝宝脸（耳朵 + 脸 + 眼睛/笑镂空 + 呆毛）。
+  五官走 evenOdd 镂空而不是叠色，monochrome（安卓 13 主题图标）单色渲染也能看出五官。
+  全部画在中央 66dp 安全区内。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 左右耳朵 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M31,48.5 a5.5,5.5 0 1,0 0,11 a5.5,5.5 0 1,0 0,-11 z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M77,48.5 a5.5,5.5 0 1,0 0,11 a5.5,5.5 0 1,0 0,-11 z" />
+
+    <!-- 脸 + 眼睛/笑（镂空） -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M54,30 a24,24 0 1,0 0,48 a24,24 0 1,0 0,-48 z
+            M45,49.4 a2.6,2.6 0 1,0 0,5.2 a2.6,2.6 0 1,0 0,-5.2 z
+            M63,49.4 a2.6,2.6 0 1,0 0,5.2 a2.6,2.6 0 1,0 0,-5.2 z
+            M46,60 Q54,70 62,60 Q54,77 46,60 z" />
+
+    <!-- 呆毛 -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M54,31 C48,24 55,16 62,19" />
+</vector>

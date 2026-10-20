@@ -1,0 +1,92 @@
+package com.babycare.app.ui.theme
+
+import androidx.compose.ui.graphics.Color
+
+/**
+ * 颜色 token：与 Figma 变量集「颜色」一一对应（亮/暗两套），共 25 个。
+ * 色值来源 docs/UI设计说明.md §2.1——改设计稿时同步这里。
+ * nurse（亲喂）与 primary 同值，保留独立字段是为了语义清晰。
+ */
+data class BabyColors(
+    val bg: Color,
+    val surface: Color,
+    val surfaceAlt: Color,
+    val divider: Color,
+    val text1: Color,
+    val text2: Color,
+    val text3: Color,
+    val primary: Color,
+    val primarySoft: Color,
+    val nurse: Color,
+    val nurseSoft: Color,
+    val feed: Color,
+    val feedSoft: Color,
+    val diaper: Color,
+    val diaperSoft: Color,
+    val sleep: Color,
+    val sleepSoft: Color,
+    val bath: Color,
+    val bathSoft: Color,
+    val growth: Color,
+    val growthSoft: Color,
+    val edu: Color,
+    val eduSoft: Color,
+    val vaccine: Color,
+    val vaccineSoft: Color,
+)
+
+val LightBabyColors = BabyColors(
+    bg = Color(0xFFFAF6F3),
+    surface = Color(0xFFFFFFFF),
+    surfaceAlt = Color(0xFFF4EDE8),
+    divider = Color(0xFFEFE7E1),
+    text1 = Color(0xFF3D3633),
+    text2 = Color(0xFF8C817B),
+    text3 = Color(0xFFC2B6AE),
+    primary = Color(0xFFE8697A),
+    primarySoft = Color(0xFFFBE8EB),
+    nurse = Color(0xFFE8697A),
+    nurseSoft = Color(0xFFFBE8EB),
+    feed = Color(0xFFE3A246),
+    feedSoft = Color(0xFFFCF1DF),
+    diaper = Color(0xFF66BA95),
+    diaperSoft = Color(0xFFE5F4EE),
+    sleep = Color(0xFF7D9BE8),
+    sleepSoft = Color(0xFFE9EEFA),
+    bath = Color(0xFF5BBED4),
+    bathSoft = Color(0xFFE3F4F8),
+    growth = Color(0xFFA78BDB),
+    growthSoft = Color(0xFFF0EAF8),
+    edu = Color(0xFFE8865C),
+    eduSoft = Color(0xFFFCEAE1),
+    vaccine = Color(0xFFD9534F),
+    vaccineSoft = Color(0xFFFBE7E6),
+)
+
+val DarkBabyColors = BabyColors(
+    bg = Color(0xFF161210),
+    surface = Color(0xFF221C19),
+    surfaceAlt = Color(0xFF2B2420),
+    divider = Color(0xFF332B27),
+    text1 = Color(0xFFF0E9E4),
+    text2 = Color(0xFFA79C95),
+    text3 = Color(0xFF6E645E),
+    primary = Color(0xFFE8808F),
+    primarySoft = Color(0xFF3A2A2E),
+    nurse = Color(0xFFE8808F),
+    nurseSoft = Color(0xFF3A2A2E),
+    feed = Color(0xFFF0B45F),
+    feedSoft = Color(0xFF3A3226),
+    diaper = Color(0xFF7CC9A8),
+    diaperSoft = Color(0xFF28352F),
+    sleep = Color(0xFF96ABEC),
+    sleepSoft = Color(0xFF282E42),
+    bath = Color(0xFF72CBE0),
+    bathSoft = Color(0xFF27353B),
+    growth = Color(0xFFBEA6E8),
+    growthSoft = Color(0xFF332C3E),
+    edu = Color(0xFFF09A70),
+    eduSoft = Color(0xFF3B2F28),
+    vaccine = Color(0xFFE06060),
+    vaccineSoft = Color(0xFF3A2828),
+)
