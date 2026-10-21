@@ -106,6 +106,14 @@ class SyncCenter(
         }
         scope.launch { worker() }
         scope.launch { refreshPendingCount() }
+        // K12 升级自愈：协议版本落后 → 游标归零，下轮全量重拉（LWW 幂等，只补缺失不覆盖）
+        if (prefs.protoVersion() < PROTO_VERSION) {
+            scope.launch {
+                store.resetCursor()
+                prefs.setProtoVersion(PROTO_VERSION)
+                kick()
+            }
+        }
     }
 
     fun kick() {
@@ -127,7 +135,8 @@ class SyncCenter(
     private suspend fun runRound() {
         _state.value = _state.value.copy(running = true)
         try {
-            engine.round()
+            // K12：首轮先拉后推（见 SyncEngine.round 注释）；首轮失败重试仍是先拉，幂等无害
+            engine.round(pullFirst = !config.value.initialSyncDone)
             backoffIndex = 0
             nextAllowedAt = 0L
             if (!config.value.initialSyncDone) prefs.markInitialDone()
@@ -143,7 +152,23 @@ class SyncCenter(
             }
         } catch (e: Exception) {
             enterBackoff("同步出错：${e.message ?: "未知错误"}")
+        } finally {
+            // K12.1：收敛不依赖本轮成功——push 一直失败时 pull 的数据已落库，
+            // 档案必须先并掉（否则界面持续跟空档案），收敛写等下一轮成功再推
+            runCatching { converge() }
         }
+    }
+
+    /**
+     * 轮后对账（K11）：先换挂再打墓碑（输家名下记录改挂赢家，否则记录跟着死档案隐身）；
+     * 全部走 repo 写路径 → 发 changes → 自动触发下一轮推送，对端拉到后各自收敛。
+     * 规则纯函数在 [SyncConverge]，两端算出同一赢家，不会各删各的。
+     */
+    private suspend fun converge() {
+        val plan = SyncConverge.plan(repo.allOnce())
+        if (!plan.hasWork) return
+        plan.babyLosers.forEach { repo.reassignBaby(it.uuid, plan.babyWinner!!.uuid) }
+        (plan.babyLosers + plan.taskLosers).forEach { repo.softDelete(it) }
     }
 
     private suspend fun enterBackoff(message: String) {
@@ -187,6 +212,7 @@ class SyncCenter(
     private suspend fun bind(call: suspend () -> BindResponse): String? = try {
         val resp = call()
         prefs.bind(resp, deviceNameIfBlank())
+        store.resetCursor() // K12：游标归零 + 首轮先拉后推，保证拉全家庭历史（含换家庭重绑）
         store.markAllDirty() // K2：存量记录状态未知视为待推 → 首轮全量上行
         _state.value = _state.value.copy(authExpired = false, lastError = null)
         refreshDeviceNames()
@@ -247,6 +273,8 @@ class SyncCenter(
 
     private companion object {
         const val PULL_PERIOD_MS = 60_000L
+        /** K12：先拉后推 + 绑定重置游标落地时的协议版本；下个破坏同步语义的修复再 +1 */
+        const val PROTO_VERSION = 1
         /** 5s → 30s → 2min → 5min 封顶（D-4 静默重试） */
         val BACKOFF_LADDER = longArrayOf(5_000, 30_000, 120_000, 300_000)
         val deviceNamesSerializer = MapSerializer(String.serializer(), String.serializer())

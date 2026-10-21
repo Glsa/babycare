@@ -46,6 +46,24 @@ V1.1 FR-20 App 侧全量落地：本地每次写立即触发 push（不攒批、
 - `:app:assembleDebug` 通过
 - 真机双机冒烟待跑（配对、A 记 B 见、断网 10 笔恢复补推、清空同步消失、角标显示）
 
+## 增量：双档案收敛（K11，双机实测修复）
+
+实测发现：B 先被引导建档再配对（不建档进不了我的页），同步后家里两份档案，B 界面跟自己的空档案 → A 的记录「看不见」。
+
+- 新增 `sync/SyncConverge.kt`（纯规划：档案保最旧、任务同名保最旧、平局比 uuid 全端一致）+ `SyncCenter.converge()` 每轮成功后对账落地
+- `RecordDao.reassignBaby` / `BabyRepository.reassignBaby`：输家档案名下记录换挂赢家；UPDATE 推进 updatedAt（服务端 LWW 只认更晚，babyId 只活在信封里）
+- 存量已分叉数据**无需重绑自愈**：收敛写置脏走推送，对端拉到后下一轮对账为无冲突即停
+- 新增 `SyncConvergeTest` 8 条；148 单测全绿，assembleDebug 通过
+
+## 增量：首绑拉不到历史（K12，双机二轮实测修复）
+
+K11 装机后 B 仍看不到 A 的数据——排查发现 B 的 Room 里**根本没有** A 的记录：旧轮序「先推后拉」在首绑时，markAllDirty 先把 B 自家 ~15 行推上去，push 响应把游标抬到 76，之后 pull 从 76 起永远拉不到 seq 1~61 的 A 的历史（拉空也返回 200，状态显示「同步成功」）。K11 在 B 上无冲突可收，属空转。
+
+- `SyncEngine.round(pullFirst)`：首轮（initialSyncDone=false）**先拉后推**；非首轮维持原序（每次写即推的即时性不受影响）
+- `bind()` 即 `resetCursor()`（换家庭重绑同样全量）；`SyncStore.resetCursor()` 落 meta
+- **存量已绑设备自愈**：prefs 新增 `sync_proto_version`，启动发现落后 → 一次性游标归零全量重拉（LWW 幂等，已有行同版本被拒、只补缺失）
+- 新增引擎测试 2 条（先拉后推时序 / 非首轮原序）；**150 单测全绿**，assembleDebug 通过。两台装机打开 App 即自动全量重拉 + 收敛
+
 ## 遗留
 
 - `usesCleartextTraffic="true"` 是为内网 http 调试的全局放行；公网部署走 https 后可移除

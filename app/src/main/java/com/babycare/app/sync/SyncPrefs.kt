@@ -71,6 +71,13 @@ class SyncPrefs(private val prefs: SharedPreferences) {
 
     fun markInitialDone() = update(_config.value.copy(initialSyncDone = true))
 
+    /** 同步协议版本（K12）：落后即一次性重置游标全量重拉；存量已绑设备靠它吃到顺序修复 */
+    fun protoVersion(): Int = prefs.getInt(KEY_PROTO_VERSION, 0)
+
+    fun setProtoVersion(v: Int) {
+        prefs.edit().putInt(KEY_PROTO_VERSION, v).apply()
+    }
+
     /** 解绑：清令牌与家庭回到未绑定；地址/设备名保留（重绑省输入），本地数据与游标不动 */
     fun unbind() = update(
         _config.value.copy(
@@ -86,5 +93,6 @@ class SyncPrefs(private val prefs: SharedPreferences) {
         const val KEY_SERVER_DEVICE = "sync_server_device_id"
         const val KEY_ENABLED = "sync_enabled"
         const val KEY_INITIAL_DONE = "sync_initial_done"
+        const val KEY_PROTO_VERSION = "sync_proto_version"
     }
 }

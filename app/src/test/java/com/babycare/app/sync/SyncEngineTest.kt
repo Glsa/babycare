@@ -18,6 +18,8 @@ class SyncEngineTest {
     private class FakeTransport : SyncTransport {
         val pushes = mutableListOf<List<PushChange>>()
         val pullCursors = mutableListOf<Long>()
+        /** K12 用：按发生顺序记录 push/pull，断言先拉后推 */
+        val events = mutableListOf<String>()
         var seq = 100L
         var pullPages = ArrayDeque<PullResponse>()
 
@@ -30,12 +32,14 @@ class SyncEngineTest {
         override suspend fun devices() = error("引擎测试不触达")
 
         override suspend fun push(changes: List<PushChange>): PushResponse {
+            events += "push"
             pushes += changes
             seq += changes.size
             return PushResponse(applied = changes.size, skipped = 0, cursor = seq)
         }
 
         override suspend fun pull(cursor: Long, limit: Int): PullResponse {
+            events += "pull"
             pullCursors += cursor
             return pullPages.removeFirstOrNull() ?: PullResponse(emptyList(), cursor, hasMore = false)
         }
@@ -53,6 +57,9 @@ class SyncEngineTest {
         override suspend fun cursor() = cursorValue
         override suspend fun raiseCursorTo(cursor: Long) {
             if (cursor > cursorValue) cursorValue = cursor
+        }
+        override suspend fun resetCursor() {
+            cursorValue = 0
         }
         override suspend fun dirtyOnce(limit: Int) = rows.filter { it.dirty }.sortedBy { it.updatedAt }.take(limit)
         override suspend fun markPushed(uuid: String, updatedAt: Long) {
@@ -128,6 +135,35 @@ class SyncEngineTest {
         SyncEngine(t, s).round()
         assertEquals(1, s.markAllDirtyCalls)
         assertEquals(listOf(3), t.pushes.map { it.size })
+    }
+
+    @Test
+    fun `首轮先拉后推，历史seq小于自家推送游标也能拉到`() = runBlocking {
+        // K12 复现：对端历史在 seq 1~61，本机绑定后推 15 行到 seq 62~76。
+        // 老逻辑先推 → 游标被抬到 76 → 历史永远拉不到；先拉后推 + 绑定重置游标后必须拉全
+        val t = FakeTransport().apply { seq = 61L }
+        val s = FakeStore().apply { repeat(15) { rows += entity("u$it", dirty = true) } }
+        s.resetCursor() // 绑定路径（K12）
+        t.pullPages += PullResponse(
+            changes = (1..61).map { pulled("hist$it", updatedAt = it.toLong()) },
+            nextCursor = 61L, hasMore = false,
+        )
+        SyncEngine(t, s).round(pullFirst = true)
+
+        // 顺序：先拉（此时游标还是 0）后推；61 条历史全部落地
+        assertEquals(listOf("pull", "push"), t.events)
+        assertEquals(0L, t.pullCursors.first())
+        (1..61).forEach { n -> assertTrue(s.rows.any { it.uuid == "hist$n" }) }
+        // 推完游标抬到自家最后一行，后续增量不受影响
+        assertEquals(61L + 15, s.cursorValue)
+    }
+
+    @Test
+    fun `非首轮维持先推后拉`() = runBlocking {
+        val t = FakeTransport()
+        val s = FakeStore().apply { rows += entity("u1", dirty = true) }
+        SyncEngine(t, s).round(pullFirst = false)
+        assertEquals(listOf("push", "pull"), t.events)
     }
 
     @Test

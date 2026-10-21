@@ -158,4 +158,10 @@ class BabyRepository(
         recordDao.tombstoneAll(now())
         _changes.tryEmit(Unit)
     }
+
+    /** 换挂宝宝（0016 K11 档案收敛）：输家档案名下记录改挂赢家，置脏走推送 */
+    suspend fun reassignBaby(fromBabyId: String, toBabyId: String) {
+        recordDao.reassignBaby(fromBabyId, toBabyId, now())
+        _changes.tryEmit(Unit)
+    }
 }

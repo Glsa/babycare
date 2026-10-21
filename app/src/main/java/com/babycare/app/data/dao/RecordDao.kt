@@ -68,4 +68,9 @@ interface RecordDao {
     /** 同步态清空（K8）：全表墓碑化后走推送，对端一并消失；物理删除仅留给未开同步的设备 */
     @Query("UPDATE records SET deleted = 1, dirty = 1, updatedAt = :now")
     suspend fun tombstoneAll(now: Long)
+
+    /** 换挂宝宝（K11 档案收敛）：updatedAt 必须推进——babyId 在服务端只存在于信封里，
+     *  时间戳不变会被 LWW 判为同版跳过，对端就收不到换挂 */
+    @Query("UPDATE records SET babyId = :to, updatedAt = :at, dirty = 1 WHERE babyId = :from AND deleted = 0")
+    suspend fun reassignBaby(from: String, to: String, at: Long)
 }

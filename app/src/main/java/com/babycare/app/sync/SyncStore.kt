@@ -18,6 +18,9 @@ interface SyncStore {
     /** push 响应带的家庭最新 seq：直接抬高游标，避免回读自己刚推的数据（只升不降） */
     suspend fun raiseCursorTo(cursor: Long)
 
+    /** 游标归零（K12）：绑定 / 协议版本升级时全量重拉——LWW 幂等，已有行同版本会被拒，只补缺失 */
+    suspend fun resetCursor()
+
     suspend fun dirtyOnce(limit: Int): List<RecordEntity>
 
     /** 推送确认清脏：(uuid, updatedAt) 双条件——推送在途的新编辑保持脏 */
@@ -70,6 +73,10 @@ class RoomStore(private val db: BabyDatabase) : SyncStore {
 
     override suspend fun raiseCursorTo(cursor: Long) {
         if (cursor > this.cursor()) metaDao.put(MetaEntity(MetaKeys.SYNC_CURSOR, cursor.toString()))
+    }
+
+    override suspend fun resetCursor() {
+        metaDao.put(MetaEntity(MetaKeys.SYNC_CURSOR, "0"))
     }
 
     override suspend fun dirtyOnce(limit: Int): List<RecordEntity> = recordDao.dirtyOnce(limit)

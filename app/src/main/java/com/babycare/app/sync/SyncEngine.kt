@@ -4,15 +4,19 @@ package com.babycare.app.sync
  * 同步引擎（0016）：一轮 = push 全部脏记录（≤500/批）→ pull 到追平（含分页续拉）。
  * 纯逻辑不碰 Android；失败抛 [SyncException]，重试/退避由 SyncCenter 负责。
  * 幂等性由后端保证（push 重发全部 skipped），半批失败重推无害。
+ *
+ * K12：首轮（pullFirst）必须先拉后推——先推会把游标抬到自家行的 seq，
+ * 对端更早的历史（seq 更小）永远拉不到，新装机就成了「看不见对方数据」的孤岛。
  */
 class SyncEngine(
     private val transport: SyncTransport,
     private val store: SyncStore,
 ) {
 
-    suspend fun round() {
+    suspend fun round(pullFirst: Boolean = false) {
+        if (pullFirst) pullAll()
         pushAll()
-        pullAll()
+        if (!pullFirst) pullAll()
     }
 
     /** 推完为止：每批取脏→组信封→上行→双条件清脏→游标抬高到服务端最新 seq */
