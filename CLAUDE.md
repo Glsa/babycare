@@ -23,7 +23,7 @@
 - 构建注意：compileSdk 37（Room 2.8 依赖链要求，targetSdk 仍 36）；`gradle.properties` 里 `android.disallowKotlinSourceSets=false` 是 KSP 的豁免开关，别删
 - 计时类功能（睡眠/亲喂）已落地：**前台服务**（`timer/TimerService`，specialUse）+ **状态在 Room/meta**（睡眠 = sleep 记录 endAt=null；亲喂 = meta 单行 JSON）+ 开始时间戳恢复；变更唯一入口 `timer/TimerCenter`
 - **同步已实装**（0016）：`sync/` 包（传输 OkHttpSyncTransport / 信封 SyncEnvelope / 引擎 SyncEngine / 调度 SyncCenter）+ records 表 `dirty` 列（Room v1→v2）；每次写即推（CONFLATED 合流）+ 回前台/前台 60s/推后即拉；occurredAt/babyId 走 payload 信封键（后端表无此两列）；LWW 判定 `data/model/SyncMerge.kt` 与后端、备份导入同语义；**轮后对账收敛（K11，`SyncConverge`）**：双机各建档案/播种任务分叉自愈——档案与每日必做保最旧，输家记录 `reassignBaby` 换挂（UPDATE 必须推进 updatedAt，否则信封 LWW 判同版跳过）；**首轮先拉后推 + 绑定/协议升级重置游标（K12）**：先推会把游标抬过对端历史 seq（拉空也是 200），`bind()` 与 `sync_proto_version` 落后时 `resetCursor()` 全量重放（LWW 幂等只补缺失）
-- **当前状态：V1.0 与 V1.1 FR-20 云同步 App 客户端全部落地**（0016：我的页三态云同步弹层 + 记录人角标 + 清空墓碑分叉 + 播种双保险 + 双档案收敛 K11 + 首绑拉全历史 K12，150 单测全绿）；**待办：双机真机冒烟（0003~0016 一起跑）后发 V1.1**；正式功能开发走 `docs/features/` 流水线（见全局约定）
+- **当前状态：V1.0 与 V1.1 FR-20 云同步 App 客户端全部落地**（0016：我的页三态云同步弹层 + 记录人角标 + 清空墓碑分叉 + 播种双保险 + 双档案收敛 K11 + 首绑拉全历史 K12 + 引导页直通配对免建档 K13，150 单测全绿）；**待办：双机真机冒烟（0003~0016 一起跑）后发 V1.1**；正式功能开发走 `docs/features/` 流水线（见全局约定）
 - 演示数据口径（小汤圆 / 2026-08-10 / 第 69 天等）以 `docs/UI设计说明.md` §5 为准，改设计稿时保持一致
 
 ## 注意

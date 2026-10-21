@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,6 +28,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.SelectableDates
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,20 +36,55 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.babycare.app.BabycareApplication
+import com.babycare.app.ui.mine.SyncSheet
 import com.babycare.app.ui.theme.BabyTheme
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 
-/** 首启引导：昵称 + 生日必填，性别选填（FR-1；出生体重等以后在「我的」补） */
+/** 首启引导：昵称 + 生日必填，性别选填（FR-1；出生体重等以后在「我的」补）。
+ *  第二台设备走「加入家庭」不建档（K13）——档案和记录随同步到达，本页自动放行。 */
 @Composable
 fun OnboardingScreen(
     onCreate: (nickname: String, birthday: LocalDate, gender: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val app = LocalContext.current.applicationContext as BabycareApplication
+    val syncConfig by app.syncCenter.config.collectAsState()
+    var showJoin by remember { mutableStateOf(false) }
+
+    // 已绑定且首轮没跑完：家庭数据在路上，等它而不是再建一份档案
+    if (syncConfig.bound && syncConfig.enabled && !syncConfig.initialSyncDone) {
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text("👶", fontSize = 56.sp)
+            Spacer(Modifier.height(16.dp))
+            CircularProgressIndicator()
+            Spacer(Modifier.height(16.dp))
+            Text("已加入家庭，正在拉取数据…", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "宝宝档案和历史记录会自动到达，无需在此建档",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(24.dp))
+            TextButton(onClick = { showJoin = true }) { Text("查看同步状态") }
+        }
+        if (showJoin) SyncSheet(app.syncCenter, onDismiss = { showJoin = false })
+        return
+    }
+
     var nickname by remember { mutableStateOf("") }
     var birthday by remember { mutableStateOf<LocalDate?>(null) }
     var gender by remember { mutableStateOf("") }
@@ -135,7 +172,16 @@ fun OnboardingScreen(
             enabled = nickname.isNotBlank() && birthday != null,
             modifier = Modifier.fillMaxWidth(),
         ) { Text("开始记录") }
+        // 第二台设备（K13）：配对加入即可，档案由家庭同步带过来——避免被迫建档产生双档案
+        TextButton(
+            onClick = { showJoin = true },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("已有家庭？加入家庭同步，无需建档") }
         Spacer(Modifier.height(32.dp))
+    }
+
+    if (showJoin) {
+        SyncSheet(app.syncCenter, onDismiss = { showJoin = false })
     }
 
     if (showDatePicker) {
